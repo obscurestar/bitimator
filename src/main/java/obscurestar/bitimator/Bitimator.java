@@ -10,6 +10,9 @@ import java.awt.event.ItemListener;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+
+import obscurestar.bitimator.BitPanel.Tool;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
@@ -37,6 +40,10 @@ public class Bitimator extends JFrame {
 	private JButton mBtnDelete;
 	private BitPanel mBitPanel;
 	private JLabel mLabelInfo;
+	private Iconic mIcons = new Iconic();
+	private boolean mPlaying = false;
+	private JPanel panel_1;
+	private JPanel mToolPanel;
 
 	/**
 	 * Launch the application.
@@ -97,52 +104,66 @@ public class Bitimator extends JFrame {
 		mnNewMenu.add(mntmNewMenuItem_6);	
 	}
 	
+	public JButton addIconButton( JPanel panel, String name )
+	{
+		/*Creates a button with an icon.*/	
+		Dimension button_dims = new Dimension(30,30);
+		
+		JButton button = new JButton();
+		button.setIcon( mIcons.getIcon( name ) );
+		button.setPreferredSize(button_dims);
+		panel.add(button);
+		
+		return button;
+	}
+	
 	public void addButtons()
 	{
 		JPanel panel_buttons = new JPanel();
 		contentPane.add(panel_buttons, BorderLayout.SOUTH);
-		
-		Dimension button_dims = new Dimension(40,30);
-		mBtnBegin = new JButton("|<");
-		mBtnBegin.setPreferredSize(button_dims);
 		panel_buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-		panel_buttons.add(mBtnBegin);
+
+		Dimension button_dims = new Dimension(30,30);
+		mBtnBegin = addIconButton( panel_buttons, "begin" );
 		mBtnBegin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mBitPanel.begin();
 			}
 		});
 		
-		mBtnBack = new JButton("<");
-		mBtnBack.setPreferredSize(button_dims);
-		panel_buttons.add(mBtnBack);
+		mBtnBack = addIconButton( panel_buttons, "back" );
 		mBtnBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mBitPanel.back();
 			}
 		});
 		
-		mBtnPlay = new JButton("|>");
-		mBtnPlay.setPreferredSize(button_dims);
-		panel_buttons.add(mBtnPlay);
+		mBtnPlay = addIconButton( panel_buttons, "play" );
 		mBtnPlay.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent e) 
+			{
+				mPlaying = !mPlaying;
+				
+				if(mPlaying)
+				{
+					mBtnPlay.setIcon( mIcons.getIcon("play") );
+				}
+				else
+				{
+					mBtnPlay.setIcon( mIcons.getIcon("pause") );
+				}
 				mBitPanel.play();
 			}
 		});
 		
-		mBtnFwd = new JButton(">");
-		mBtnFwd.setPreferredSize(button_dims);
-		panel_buttons.add(mBtnFwd);
+		mBtnFwd = addIconButton( panel_buttons, "fwd" );
 		mBtnFwd.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mBitPanel.fwd();
 			}
 		});
 		
-		mBtnEnd = new JButton(">|");
-		mBtnEnd.setPreferredSize(button_dims);
-		panel_buttons.add(mBtnEnd);
+		mBtnEnd = addIconButton( panel_buttons, "end" );
 		mBtnEnd.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mBitPanel.end();
@@ -186,12 +207,35 @@ public class Bitimator extends JFrame {
 		panel_buttons.add(lblSpacer4);
 		
 		mBtnDelete = new JButton("Del");
-		panel_buttons.add(mBtnDelete);
 		mBtnDelete.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mBitPanel.delete();
 			}
 		});
+		panel_buttons.add(mBtnDelete);
+	}
+	
+	public JButton addDrawTool( JPanel panel, String name, BitPanel.Tool tool )
+	{
+		JButton button = addIconButton( panel, name );
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mBitPanel.setTool( tool );
+			}
+		});
+		return button;
+	}
+	
+	public void addTools( JPanel panel )
+	{
+		mToolPanel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+		JButton btnPencil = addDrawTool( panel, "pencil", Tool.PENCIL );	
+		JButton btnEraser = addDrawTool( panel, "eraser", Tool.ERASER );
+		JButton btnNot = addDrawTool( panel, "not", Tool.NOT );
+		JButton btnLine = addDrawTool( panel, "line", Tool.LINE );
+		JButton btnSquare = addDrawTool( panel, "square", Tool.RECT );
+		JButton btnCircle = addDrawTool( panel, "circle", Tool.CIRCLE );
 	}
 	
 	public void setFrameInfo(String text)
@@ -204,7 +248,7 @@ public class Bitimator extends JFrame {
 	 */
 	public Bitimator() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 606, 525);
+		setBounds(100, 100, 634, 615);
 
 		addMenuItems();
 		
@@ -214,9 +258,14 @@ public class Bitimator extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
 		
+		//JPanel mBitPanel = new JPanel();
 		mBitPanel = new BitPanel(this);
 		contentPane.add(mBitPanel, BorderLayout.CENTER);
 		
+		mToolPanel = new JPanel();
+		contentPane.add(mToolPanel, BorderLayout.WEST);
+		
+		addTools( mToolPanel );
 		addButtons();
 	}
 

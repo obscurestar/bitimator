@@ -26,8 +26,17 @@ public class Frame {
 	
 	public boolean toggle(Point p)
 	{
+		//Returns value before operation
+		boolean previous_value = mDrawing[p.x][p.y];
 		mDrawing[p.x][p.y] = !mDrawing[p.x][p.y];
-		return mDrawing[p.x][p.y];
+		return previous_value;
+	}
+	
+	public boolean set(Point p, boolean mode)
+	{
+		boolean previous_value = (boolean) mDrawing[p.x][p.y];
+		mDrawing[p.x][p.y] =  mode;
+		return previous_value;
 	}
 	
 	public boolean get(int x,int y)

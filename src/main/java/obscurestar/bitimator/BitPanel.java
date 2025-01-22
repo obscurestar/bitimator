@@ -10,9 +10,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.HashMap;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -23,6 +23,16 @@ import java.awt.event.ActionListener;
 public class BitPanel extends JPanel implements MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = 1L;
 	    
+	public enum Tool
+	{
+		PENCIL,
+		ERASER,
+		NOT,
+		LINE,
+		RECT,
+		CIRCLE
+	}
+	
     //Member variables
 	private Point mDim= new Point(24,24);
     private Rectangle mDrawArea;
@@ -35,9 +45,12 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     private ActionListener mFrameTimer;
     private boolean mOnionSkinning = false; //For play mode
     private Timer mTimer;
-
-    private Set<Point> mStroke = new HashSet<Point>();
+    private Point mClickPoint = new Point(-1,-1); //Where click originated.
+    private Point mLastPoint = new Point(-1,-1);
+    private HashMap<Point, Boolean> mStroke = new HashMap<Point, Boolean>();
     private ArrayList<Frame> mFrames = new ArrayList<Frame>();
+    private BitPanel.Tool mTool = Tool.PENCIL;
+    
     private int mCurrentFrame;
     
     public BitPanel(Bitimator parent) {    			
@@ -59,6 +72,11 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
                 playBack();
             }
         };
+    }
+    
+    public void setTool( Tool tool )
+    {
+    	mTool = tool;
     }
     
     public void playBack()
@@ -124,7 +142,8 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     		mFrames.add( new Frame(mDim) );
     	}
 
-    		
+    	undoStroke();
+    	
     	repaint();
     }
     
@@ -156,6 +175,18 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     public void  flushStroke()
     {
     	mStroke.clear();
+    	mClickPoint.x = -1;
+    	mClickPoint.y = -1;
+    	mLastPoint = mClickPoint;
+    }
+    
+    public void undoStroke()
+    {
+    	for (HashMap.Entry<Point, Boolean> item : mStroke.entrySet()) {
+    	    Point p = item.getKey();
+    	    boolean b   = (boolean) item.getValue();
+    	    getFrame().set(p, b);
+    	}
     }
     
     private Frame getFrame()
@@ -187,6 +218,175 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	mDrawArea.height = height;
     }
     
+    private void drawNot( Point p )
+    {
+    	boolean previous_value = getFrame().toggle(p);
+    	
+    	mStroke.putIfAbsent( p, previous_value );
+    }
+    
+    private void draw( Point p, boolean mode )
+    {
+    	getFrame().set(p, mode);
+    }
+    
+    private Point[] getCorners( Point p )
+    {
+    	Point[] corner = { new Point(), new Point() };
+   	 
+    	corner[0].x = Math.min(p.x,  mClickPoint.x);
+    	corner[0].y = Math.min(p.y,  mClickPoint.y);
+    	
+    	corner[1].x = Math.max(p.x,  mClickPoint.x);
+    	corner[1].y = Math.max(p.y,  mClickPoint.y);
+    	
+    	return corner;
+    }
+    
+    private void drawRect( Point p )
+    {
+    	undoStroke();  //Erase the last drawing.
+    	
+    	Point[] corner = getCorners(p);
+    	
+    	for (int c=0; c<2; ++c)
+    	{
+	    	for ( int i=corner[0].x; i<=corner[1].x; ++i )
+	    	{
+	    		Point new_point = new Point( i, corner[c].y );
+	    		boolean previous_value = getFrame().set(new_point, true);
+	    		mStroke.putIfAbsent( new_point,  previous_value );
+	    	}
+	    	for ( int i=corner[0].y; i<=corner[1].y; ++i )
+	    	{
+	    		Point new_point = new Point( corner[c].x, i );
+	    		boolean previous_value = getFrame().set(new_point, true);
+	    		mStroke.putIfAbsent( new_point,  previous_value );
+	    	}
+    	}
+    }
+    
+    private void drawCircle( Point p )
+    {
+    	undoStroke();
+       	Point[] corner = getCorners(p);
+       	Point range = new Point ( corner[1].x - corner[0].x,
+				  corner[1].y - corner[0].y );
+       	Point middle = new Point (range.x/2, range.y/2);
+       	Point draw_mid = new Point ( corner[0].x + middle.x, corner[0].y + middle.y );
+       	for (int x=0;x<middle.x;++x )
+       	{
+       		int y = (int)Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(x, 2) ) );
+       		Point pixel = new Point ( draw_mid.x + x, draw_mid.y + y );
+       		boolean previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value );
+    		
+    		pixel = new Point ( draw_mid.x + x, draw_mid.y - y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value );    
+    		
+    		pixel = new Point ( draw_mid.x - x, draw_mid.y + y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value ); 
+    		
+    		pixel = new Point ( draw_mid.x - x, draw_mid.y - y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value ); 
+       	}
+       	
+       	for (int y=0;y<middle.x;++y )
+       	{
+       		int x = (int)Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(y, 2) ) );
+       		Point pixel = new Point ( draw_mid.x + x, draw_mid.y + y );
+       		boolean previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value );
+    		
+    		pixel = new Point ( draw_mid.x + x, draw_mid.y - y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value );    
+    		
+    		pixel = new Point ( draw_mid.x - x, draw_mid.y + y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value ); 
+    		
+    		pixel = new Point ( draw_mid.x - x, draw_mid.y - y );
+       		previous_value = getFrame().set(pixel, true);
+    		mStroke.putIfAbsent( pixel,  previous_value ); 
+       	}
+    }
+    
+    private void drawLine( Point p )
+    {
+    	undoStroke();
+    	
+    	//Probably not the most efficient
+       	Point[] corner = getCorners(p);
+       	       	
+    	if ( corner[0].x == corner[1].x ) //vertical
+    	{
+    		for (int y=corner[0].y; y<=corner[1].y; ++y)
+    		{
+    			Point pixel = new Point ( corner[0].x, y );
+    			boolean previous_value = getFrame().set(pixel, true);
+        		mStroke.putIfAbsent( pixel,  previous_value );
+    		}
+    	}
+    	else if ( corner[0].y == corner[1].y ) //horizontal
+    	{
+    		for (int x=corner[0].x; x<=corner[1].x; ++x)
+    		{
+    			Point pixel = new Point ( x , corner[0].y );
+    			boolean previous_value = getFrame().set(pixel, true);
+        		mStroke.putIfAbsent( pixel,  previous_value );
+    		}
+    	}
+    	else
+    	{
+           	Point range = new Point ( corner[1].x - corner[0].x,
+  				  corner[1].y - corner[0].y );
+           	
+    		double slope = (double)( p.y - mClickPoint.y ) / (double)( p.x - mClickPoint.x );
+    		
+           	Point direction = new Point(1,1);
+    		if (mClickPoint.x > p.x)
+    		{
+    			direction.x = -1;
+    		}
+    		if (mClickPoint.y > p.y)
+    		{
+    			direction.y = -1;
+    		}
+    		
+    		for( int i=0; i<range.x; ++i )
+    		{
+    			int x = direction.x * i;
+    			int y = (int) ((double)x * slope);
+    			
+    			Point pixel = new Point( mClickPoint.x + x, 
+    									 mClickPoint.y + y );
+    			boolean previous_value = getFrame().set(pixel, true);
+        		mStroke.putIfAbsent( pixel,  previous_value );
+    		}
+    		
+    		if (range.x != range.y)
+    		{
+    			//At 45 degrees we don't need to draw the other half of the line.
+	    		slope = 1.0/slope;
+	    		for( int i=0; i<range.y; ++i )
+	    		{
+	    			int y = direction.y * i;
+	    			int x = (int) ((double)y * slope);
+	    			
+	    			System.out.println("XY: " + x + y );
+	    			Point pixel = new Point( mClickPoint.x + x, 
+	    									 mClickPoint.y + y );
+	    			boolean previous_value = getFrame().set(pixel, true);
+	        		mStroke.putIfAbsent( pixel,  previous_value );
+	    		}
+    		}
+    	}
+    }
+    
     private void handleMouseClick(int x, int y, boolean pressed)
     {
     	boolean repaint = false;
@@ -200,14 +400,45 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     		Point p = new Point( ( x - mDrawArea.x ) / mPixelSize, 
     							 ( y - mDrawArea.y ) / mPixelSize );
     		
-    		if ( !mPressed
-    			|| ! mStroke.contains(p) )
+    		if ( !mPressed )
     		{
-    			//New click or we've moved to a new cell.
-    			getFrame().toggle(p);
-    			mStroke.add( p );
-    			repaint = true;
+    			mClickPoint = p;
+    			mLastPoint = p;
     		}
+    		
+
+			switch ( mTool )
+			{
+			case PENCIL:
+				draw( p, true );
+				break;
+			case ERASER:
+				draw( p, false );
+				break;
+			case NOT:
+	    		if ( !mPressed
+	        			|| ! mStroke.containsKey(p) )
+	        		{
+	        			//New click or we've moved to a new cell.
+	    				drawNot( p );
+	        		}
+	    			break;
+			case LINE:
+				drawLine( p );
+				break;
+			case CIRCLE:
+				drawCircle( p );
+				break;
+			case RECT:
+				drawRect( p );
+				break;
+			default:
+				System.out.println("Unsupported tool.");
+				return;
+			}
+			
+			repaint = true;
+			mLastPoint = p;
     	}
     	
     	mPressed = pressed;
