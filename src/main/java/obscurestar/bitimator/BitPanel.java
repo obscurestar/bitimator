@@ -30,11 +30,16 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
 		NOT,
 		LINE,
 		RECT,
-		CIRCLE
+		CIRCLE,
+		MOVE,
+		SELECT,
+		COPY,
+		CUT,
+		PASTE
 	}
 	
     //Member variables
-	private Point mDim= new Point(24,24);
+	private Point mDim= new Point(20,16);
     private Rectangle mDrawArea;
     private int mPixelSize;
     private boolean mPressed;
@@ -50,6 +55,9 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     private HashMap<Point, Boolean> mStroke = new HashMap<Point, Boolean>();
     private ArrayList<Frame> mFrames = new ArrayList<Frame>();
     private BitPanel.Tool mTool = Tool.PENCIL;
+    private Selection mSelection = new Selection();
+    private Rectangle mSelectionRect = new Rectangle();
+    private Selection mClipboard = new Selection();
     
     private int mCurrentFrame;
     
@@ -97,12 +105,14 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     
     public void begin()
     {
+    	mSelection.complete();
     	mCurrentFrame = 0;
     	repaint();
     }
     
     public void back()
     {
+    	mSelection.complete();
     	if (mCurrentFrame > 0)
     	{
     		mCurrentFrame--;
@@ -112,6 +122,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     
     public void fwd()
     {
+    	mSelection.complete();
     	if (mCurrentFrame < mFrames.size()-1)
     	{
     		mCurrentFrame++;
@@ -121,12 +132,14 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     
     public void end()
     {
+    	mSelection.complete();
     	mCurrentFrame  = mFrames.size() - 1;
     	repaint();
     }
     
     public void add()
     {
+    	mSelection.complete();
     	mCurrentFrame++;
     	mFrames.add( mCurrentFrame, new Frame(mDim) );
     	repaint();
@@ -134,6 +147,8 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     
     public void delete()
     {
+    	mSelection.complete();
+
     	mFrames.remove(mCurrentFrame);
     	
     	mCurrentFrame =  Math.max( Math.min( mCurrentFrame,  mFrames.size()-1 ), 0);
@@ -150,6 +165,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     public void play()
     {
     	mPlaying = !mPlaying;
+    	mSelection.complete();
     	
     	if (mPlaying)
     	{
@@ -218,18 +234,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	mDrawArea.height = height;
     }
     
-    private void drawNot( Point p )
-    {
-    	boolean previous_value = getFrame().toggle(p);
-    	
-    	mStroke.putIfAbsent( p, previous_value );
-    }
-    
-    private void draw( Point p, boolean mode )
-    {
-    	getFrame().set(p, mode);
-    }
-    
     private Point[] getCorners( Point p )
     {
     	Point[] corner = { new Point(), new Point() };
@@ -243,7 +247,19 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	return corner;
     }
     
-    private void drawRect( Point p )
+    private void toolNot( Point p )
+    {
+    	boolean previous_value = getFrame().toggle(p);
+    	
+    	mStroke.putIfAbsent( p, previous_value );
+    }
+    
+    private void toolDraw( Point p, boolean mode )
+    {
+    	getFrame().set(p, mode);
+    }
+    
+    private void toolRect( Point p )
     {
     	undoStroke();  //Erase the last drawing.
     	
@@ -266,7 +282,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	}
     }
     
-    private void drawCircle( Point p )
+    private void toolCircle( Point p )
     {
     	undoStroke();
        	Point[] corner = getCorners(p);
@@ -276,7 +292,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
        	Point draw_mid = new Point ( corner[0].x + middle.x, corner[0].y + middle.y );
        	for (int x=0;x<middle.x;++x )
        	{
-       		int y = (int)Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(x, 2) ) );
+       		int y = (int)Math.round( Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(x, 2) ) ) );
        		Point pixel = new Point ( draw_mid.x + x, draw_mid.y + y );
        		boolean previous_value = getFrame().set(pixel, true);
     		mStroke.putIfAbsent( pixel,  previous_value );
@@ -296,7 +312,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
        	
        	for (int y=0;y<middle.x;++y )
        	{
-       		int x = (int)Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(y, 2) ) );
+       		int x = (int)Math.round( Math.sqrt( (double)(Math.pow(middle.x, 2) - Math.pow(y, 2) ) ) );
        		Point pixel = new Point ( draw_mid.x + x, draw_mid.y + y );
        		boolean previous_value = getFrame().set(pixel, true);
     		mStroke.putIfAbsent( pixel,  previous_value );
@@ -315,7 +331,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
        	}
     }
     
-    private void drawLine( Point p )
+    private void toolLine( Point p )
     {
     	undoStroke();
     	
@@ -360,7 +376,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     		for( int i=0; i<range.x; ++i )
     		{
     			int x = direction.x * i;
-    			int y = (int) ((double)x * slope);
+    			int y = (int) Math.round((double)x * slope);
     			
     			Point pixel = new Point( mClickPoint.x + x, 
     									 mClickPoint.y + y );
@@ -375,9 +391,8 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
 	    		for( int i=0; i<range.y; ++i )
 	    		{
 	    			int y = direction.y * i;
-	    			int x = (int) ((double)y * slope);
+	    			int x = (int) Math.round((double)y * slope);
 	    			
-	    			System.out.println("XY: " + x + y );
 	    			Point pixel = new Point( mClickPoint.x + x, 
 	    									 mClickPoint.y + y );
 	    			boolean previous_value = getFrame().set(pixel, true);
@@ -387,12 +402,91 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	}
     }
     
+    
+    private void toolSelection( Point p, boolean pressed )
+    {
+    	mSelectionRect = new Rectangle (  Math.min( mClickPoint.x, p.x ),
+    									  Math.min( mClickPoint.y, p.y ),
+    									  Math.abs( mClickPoint.x - p.x ),
+    									  Math.abs( mClickPoint.y - p.y ) );
+    	
+    	if ( !mPressed  && !mSelection.selecting() )
+		{
+			mSelection.begin( mClickPoint );
+		}
+		if ( !pressed )
+		{
+			mFrames.set( mCurrentFrame,  new Frame ( mSelection.end( p, getFrame() ) ) );
+			//mFrames.set( mCurrentFrame,  new Frame ( mSelection.cut() ) );
+			mTool = Tool.MOVE;
+		}
+    }
+    
+    private void toolMove( Point p )
+    {
+    	if ( mSelection.hasSelection() && ! mSelection.selecting() )
+    	{
+    		mFrames.set( mCurrentFrame, new Frame ( mSelection.move( p, getFrame() ) ) );
+    	}
+    }
+    
+    public void copy()
+    {
+    	if (mSelection.hasSelection())
+    	{
+	    	mSelection.complete( );
+	    	mClipboard = new Selection( mSelection, getFrame() );
+	    	mFrames.set( mCurrentFrame, new Frame( mSelection.restore( getFrame() ) ) );
+	    	repaint();
+    	}
+    	else
+    	{
+    		System.out.println("Nothing selected to copy.");
+    	}
+    }
+    
+    public void cut()
+    {
+    	if (mSelection.hasSelection())
+    	{
+	    	System.out.println("Copied to clipboard.");
+	    	mClipboard = new Selection( mSelection, getFrame() );
+	    	mFrames.set( mCurrentFrame, new Frame( mSelection.cut( ) ) );
+	    	mSelection.complete( );
+	    	repaint();
+    	}
+    	else
+    	{
+    		System.out.println("Nothing selected to copy.");
+    	}
+    }
+    
+    public void paste()
+    {
+    	if (mClipboard.hasSelection())
+    	{
+    		System.out.println("Pasting from clipboard.");
+    		mSelection.complete();
+    		mSelection = new Selection( mClipboard, getFrame() );
+    		mFrames.set( mCurrentFrame,  new Frame( mSelection.refresh( getFrame() ) ) );
+    		repaint();
+    	}
+    	else
+    	{
+    		System.out.println("Nothing in clipboard.");
+    	}
+    }
+    private void handleCancel()
+    {
+    	mFrames.set( mCurrentFrame,  new Frame ( mSelection.cancel( getFrame() ) ) );
+    }
+    
     private void handleMouseClick(int x, int y, boolean pressed)
     {
     	boolean repaint = false;
     	defineDrawArea();
     	
-    	if (x > mDrawArea.x && x < mDrawArea.x + mDrawArea.width
+		if (x > mDrawArea.x && x < mDrawArea.x + mDrawArea.width
     		&& y > mDrawArea.y && y < mDrawArea.y + mDrawArea.height )
     	{
     		//If mouse in drawing area.
@@ -410,27 +504,36 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
 			switch ( mTool )
 			{
 			case PENCIL:
-				draw( p, true );
+				toolDraw( p, true );
 				break;
 			case ERASER:
-				draw( p, false );
+				toolDraw( p, false );
 				break;
 			case NOT:
 	    		if ( !mPressed
 	        			|| ! mStroke.containsKey(p) )
 	        		{
 	        			//New click or we've moved to a new cell.
-	    				drawNot( p );
+	    				toolNot( p );
 	        		}
 	    			break;
 			case LINE:
-				drawLine( p );
+				toolLine( p );
 				break;
 			case CIRCLE:
-				drawCircle( p );
+				toolCircle( p );
 				break;
 			case RECT:
-				drawRect( p );
+				toolRect( p );
+				break;
+			case SELECT:
+				toolSelection( p, pressed );
+				break;
+			case MOVE:
+				if (pressed)
+				{
+					toolMove( p );
+				}
 				break;
 			default:
 				System.out.println("Unsupported tool.");
@@ -492,7 +595,7 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
         }
     }
     
-    public void drawOnion(Graphics g)
+    private void drawOnion(Graphics g)
     {
     	if ( !mOnion.getVisible() )
     	{
@@ -521,6 +624,22 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	}
     }
     
+    private void drawSelection( Graphics g )
+    {
+    	if ( mSelection.selecting() )
+    	{
+    		//Draw rect around selection area.
+    		g.setColor(Color.GREEN);
+    		g.drawRect( mDrawArea.x + mSelectionRect.x * mPixelSize,
+    					mDrawArea.y + mSelectionRect.y * mPixelSize,
+    					mPixelSize * mSelectionRect.width, 
+    					mPixelSize * mSelectionRect.height );
+    	}
+    	else if ( mSelection.hasSelection() )
+    	{
+    	}
+    }
+    
     private void setFrameInfo()
     {
     	String info = "(" + ( mCurrentFrame + 1 ) + " of " + mFrames.size() + ")";
@@ -536,11 +655,16 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
         drawOnion(g);
         drawPixels(g, mCurrentFrame, Color.BLACK);
         drawGrid(g);
+        drawSelection(g);
     }
     
     @Override
     public void mousePressed(MouseEvent e) {
         handleMouseClick( e.getX(), e.getY(), true ); 
+        if (e.getButton() == MouseEvent.BUTTON3)
+        {
+        	handleCancel();
+        }
     }
     
     @Override

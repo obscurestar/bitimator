@@ -39,8 +39,6 @@ public class Iconic
             	name = name.substring(0, name.length() - 4);
             	ImageIcon icon = new ImageIcon( file.getAbsolutePath() );
             	mIcons.put( name, icon );
-            	//System.out.println(name);
-                //System.out.println(file.getAbsolutePath());
             }
         }
     }

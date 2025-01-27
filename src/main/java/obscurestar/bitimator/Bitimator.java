@@ -1,7 +1,6 @@
 package obscurestar.bitimator;
 
 import java.awt.EventQueue;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -42,8 +41,9 @@ public class Bitimator extends JFrame {
 	private JLabel mLabelInfo;
 	private Iconic mIcons = new Iconic();
 	private boolean mPlaying = false;
-	private JPanel panel_1;
 	private JPanel mToolPanel;
+	private static Dimension mButtonDims = new Dimension(30,30);
+
 
 	/**
 	 * Launch the application.
@@ -106,12 +106,10 @@ public class Bitimator extends JFrame {
 	
 	public JButton addIconButton( JPanel panel, String name )
 	{
-		/*Creates a button with an icon.*/	
-		Dimension button_dims = new Dimension(30,30);
-		
+		/*Creates a button with an icon.*/			
 		JButton button = new JButton();
 		button.setIcon( mIcons.getIcon( name ) );
-		button.setPreferredSize(button_dims);
+		button.setPreferredSize(mButtonDims);
 		panel.add(button);
 		
 		return button;
@@ -123,7 +121,6 @@ public class Bitimator extends JFrame {
 		contentPane.add(panel_buttons, BorderLayout.SOUTH);
 		panel_buttons.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 
-		Dimension button_dims = new Dimension(30,30);
 		mBtnBegin = addIconButton( panel_buttons, "begin" );
 		mBtnBegin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -146,11 +143,11 @@ public class Bitimator extends JFrame {
 				
 				if(mPlaying)
 				{
-					mBtnPlay.setIcon( mIcons.getIcon("play") );
+					mBtnPlay.setIcon( mIcons.getIcon("pause") );
 				}
 				else
 				{
-					mBtnPlay.setIcon( mIcons.getIcon("pause") );
+					mBtnPlay.setIcon( mIcons.getIcon("play") );
 				}
 				mBitPanel.play();
 			}
@@ -171,7 +168,6 @@ public class Bitimator extends JFrame {
 		});
 		
 		JLabel lblSpacer1 = new JLabel("      ");
-		mBtnBegin.setPreferredSize(button_dims);
 		panel_buttons.add(lblSpacer1);
 		
 		mBtnAdd = new JButton("Add");
@@ -182,6 +178,7 @@ public class Bitimator extends JFrame {
 		});
 		
 		JCheckBox chkOnion = new JCheckBox("Onion");
+		chkOnion.setSelected( true );
 		panel_buttons.add(chkOnion);
 		chkOnion.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
@@ -236,6 +233,29 @@ public class Bitimator extends JFrame {
 		JButton btnLine = addDrawTool( panel, "line", Tool.LINE );
 		JButton btnSquare = addDrawTool( panel, "square", Tool.RECT );
 		JButton btnCircle = addDrawTool( panel, "circle", Tool.CIRCLE );
+		JButton btnMove = addDrawTool( panel, "move", Tool.MOVE );
+		JButton btnSelect = addDrawTool( panel, "select", Tool.SELECT );
+		
+		JButton btnCopy = addIconButton( panel, "copy" );
+		btnCopy.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mBitPanel.copy();
+			}
+		});
+				
+		JButton btnCut = addIconButton( panel, "cut" );
+		btnCut.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mBitPanel.cut();
+			}
+		});
+		
+		JButton btnPaste = addIconButton( panel, "paste" );
+		btnPaste.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mBitPanel.paste();
+			}
+		});
 	}
 	
 	public void setFrameInfo(String text)
