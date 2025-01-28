@@ -5,12 +5,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-
-import obscurestar.bitimator.BitPanel.Tool;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -24,6 +23,8 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import java.awt.FlowLayout;
 import javax.swing.JCheckBox;
+
+import obscurestar.bitimator.BitPanel.Tool;
 
 public class Bitimator extends JFrame {
 
@@ -42,6 +43,7 @@ public class Bitimator extends JFrame {
 	private Iconic mIcons = new Iconic();
 	private boolean mPlaying = false;
 	private JPanel mToolPanel;
+	private FileIO mFileIO = new FileIO();
 	private static Dimension mButtonDims = new Dimension(30,30);
 
 
@@ -65,43 +67,73 @@ public class Bitimator extends JFrame {
 		});
 	}
 
+	public void openFile()
+	{
+		//Really not happy with how I've implemented this but whatever.
+		mBitPanel.deleteFrames();
+		mBitPanel.setFrames( mFileIO.open() );
+		mBitPanel.setFrameMS( mFileIO.getFrameMS() );
+	}
+	
 	public void addMenuItems()
 	{	
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
 		
-		JMenu mnNewMenu = new JMenu("File");
-		menuBar.add(mnNewMenu);
+		JMenu mnFile = new JMenu("File");
+		menuBar.add(mnFile);
 		
-		JMenuItem mntmNewMenuItem = new JMenuItem("New");
-		mnNewMenu.add(mntmNewMenuItem);
+		JMenuItem mntmNew = new JMenuItem("New");
+		mntmNew.addActionListener(e -> {
+			mBitPanel.newAnimation();
+        });	
+		mnFile.add(mntmNew);
 		
-		JMenuItem mntmNewMenuItem_1 = new JMenuItem("Open");
-		mnNewMenu.add(mntmNewMenuItem_1);
-		
-		JMenuItem mntmNewMenuItem_2 = new JMenuItem("Open Recent");
-		mnNewMenu.add(mntmNewMenuItem_2);
-		
+		JMenuItem mntmOpen = new JMenuItem("Open");
+		mntmOpen.addActionListener(e -> {
+			if (mFileIO.pickerOpen())
+			{
+				openFile();
+			}
+        });	
+		mnFile.add(mntmOpen);
+		/*
+		JMenuItem mntmOpenRecent = new JMenuItem("Open Recent");
+		mnFile.add(mntmOpenRecent);
+		*/
 		JSeparator separator = new JSeparator();
-		mnNewMenu.add(separator);
+		mnFile.add(separator);
 		
-		JMenuItem mntmNewMenuItem_3 = new JMenuItem("Close");
-		mnNewMenu.add(mntmNewMenuItem_3);
+		JMenuItem mntmClose = new JMenuItem("Close");
+		mnFile.add(mntmClose);
 		
 		JSeparator separator_1 = new JSeparator();
-		mnNewMenu.add(separator_1);
+		mnFile.add(separator_1);
 		
-		JMenuItem mntmNewMenuItem_4 = new JMenuItem("Save");
-		mnNewMenu.add(mntmNewMenuItem_4);
+		JMenuItem mntmSave = new JMenuItem("Save");
+		mntmSave.addActionListener(e -> {
+			if ( mFileIO.canSave() || mFileIO.pickerSaveAs() )
+			{
+				mFileIO.save( mBitPanel.getFrames(), mBitPanel.getFrameMS() );
+			}
+        });	
+		mnFile.add(mntmSave);
 		
-		JMenuItem mntmNewMenuItem_5 = new JMenuItem("Save As");
-		mnNewMenu.add(mntmNewMenuItem_5);
-		
+		JMenuItem mntmSaveAs = new JMenuItem("Save As");
+		mntmSaveAs.addActionListener(e -> {
+			if ( mFileIO.pickerSaveAs() )
+			{
+				mFileIO.save( mBitPanel.getFrames(), mBitPanel.getFrameMS() );
+			}
+        });	
+		mnFile.add(mntmSaveAs);
+		/*
 		JSeparator separator_2 = new JSeparator();
-		mnNewMenu.add(separator_2);
+		mnFile.add(separator_2);
 		
-		JMenuItem mntmNewMenuItem_6 = new JMenuItem("Preferences");
-		mnNewMenu.add(mntmNewMenuItem_6);	
+		JMenuItem mntmPreferences = new JMenuItem("Preferences");
+		mnFile.add(mntmPreferences);
+		*/	
 	}
 	
 	public JButton addIconButton( JPanel panel, String name )

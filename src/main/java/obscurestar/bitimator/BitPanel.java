@@ -82,6 +82,56 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
         };
     }
     
+    public ArrayList<Frame> getFrames()
+    {
+    	return mFrames;
+    }
+    
+    public void deleteFrames()
+    {
+    	//NOTE:  This should be called before opening a file.
+    	mFrames.clear();
+    }
+    
+    public void newAnimation()
+    {
+    	mSelection.complete();
+    	mPlaying = false;
+    	mFrames.clear();
+    	mCurrentFrame = 0;
+    	mClickPoint = new Point(-1,-1);
+    	mLastPoint = new Point(-1,-1);
+    	mFrames.add( new Frame() );
+    	repaint();
+    }
+    
+    public void setFrames( ArrayList<Frame> frames )
+    {
+    	if (frames == null || frames.size() == 0)
+    	{
+    		return;
+    	}
+    	
+    	mDim = frames.get(0).getDimensions();
+    	mSelection.complete();
+    	mFrames = frames;
+    	mPlaying = false;
+    	mCurrentFrame = 0;
+    	mClickPoint = new Point(-1,-1);
+    	mLastPoint = new Point(-1,-1);
+    	repaint();
+    }
+    
+    public void setFrameMS( int frame_ms )
+    {
+    	mFrameMS = frame_ms;
+    }
+    
+    public int getFrameMS()
+    {
+    	return mFrameMS; //miliseconds per frame.
+    }
+    
     public void setTool( Tool tool )
     {
     	mTool = tool;
