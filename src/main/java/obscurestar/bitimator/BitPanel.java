@@ -1,7 +1,6 @@
 package obscurestar.bitimator;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -9,14 +8,11 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
+
 import javax.swing.JPanel;
 import javax.swing.Timer;
-import javax.swing.SwingUtilities;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -51,7 +47,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     private boolean mOnionSkinning = false; //For play mode
     private Timer mTimer;
     private Point mClickPoint = new Point(-1,-1); //Where click originated.
-    private Point mLastPoint = new Point(-1,-1);
     private HashMap<Point, Boolean> mStroke = new HashMap<Point, Boolean>();
     private ArrayList<Frame> mFrames = new ArrayList<Frame>();
     private BitPanel.Tool mTool = Tool.PENCIL;
@@ -100,7 +95,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	mFrames.clear();
     	mCurrentFrame = 0;
     	mClickPoint = new Point(-1,-1);
-    	mLastPoint = new Point(-1,-1);
     	mFrames.add( new Frame() );
     	repaint();
     }
@@ -118,7 +112,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	mPlaying = false;
     	mCurrentFrame = 0;
     	mClickPoint = new Point(-1,-1);
-    	mLastPoint = new Point(-1,-1);
     	repaint();
     }
     
@@ -243,7 +236,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     	mStroke.clear();
     	mClickPoint.x = -1;
     	mClickPoint.y = -1;
-    	mLastPoint = mClickPoint;
     }
     
     public void undoStroke()
@@ -547,7 +539,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
     		if ( !mPressed )
     		{
     			mClickPoint = p;
-    			mLastPoint = p;
     		}
     		
 
@@ -591,7 +582,6 @@ public class BitPanel extends JPanel implements MouseListener, MouseMotionListen
 			}
 			
 			repaint = true;
-			mLastPoint = p;
     	}
     	
     	mPressed = pressed;

@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -259,14 +258,14 @@ public class Bitimator extends JFrame {
 	{
 		mToolPanel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-		JButton btnPencil = addDrawTool( panel, "pencil", Tool.PENCIL );	
-		JButton btnEraser = addDrawTool( panel, "eraser", Tool.ERASER );
-		JButton btnNot = addDrawTool( panel, "not", Tool.NOT );
-		JButton btnLine = addDrawTool( panel, "line", Tool.LINE );
-		JButton btnSquare = addDrawTool( panel, "square", Tool.RECT );
-		JButton btnCircle = addDrawTool( panel, "circle", Tool.CIRCLE );
-		JButton btnMove = addDrawTool( panel, "move", Tool.MOVE );
-		JButton btnSelect = addDrawTool( panel, "select", Tool.SELECT );
+		addDrawTool( panel, "pencil", Tool.PENCIL );	
+		addDrawTool( panel, "eraser", Tool.ERASER );
+		addDrawTool( panel, "not", Tool.NOT );
+		addDrawTool( panel, "line", Tool.LINE );
+		addDrawTool( panel, "square", Tool.RECT );
+		addDrawTool( panel, "circle", Tool.CIRCLE );
+		addDrawTool( panel, "move", Tool.MOVE );
+		addDrawTool( panel, "select", Tool.SELECT );
 		
 		JButton btnCopy = addIconButton( panel, "copy" );
 		btnCopy.addActionListener(new ActionListener() {
