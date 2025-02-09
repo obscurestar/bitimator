@@ -138,10 +138,28 @@ public class FileIO {
         return false;
 	}
 	
+    public static short reverseShort(short value)
+    {
+    	//Fucking java stupid fucking little endian with no fucking builtin function for shorts.
+        int temp = value & 0xFFFF; // Treat the short as an unsigned 16-bit int
+        return (short) ((temp >>> 8) | (temp << 8));
+    }
+    
+    public static byte[] reverseBytes(byte[] byteArray)
+    {
+    	//Java you absolute fucking knob.
+        int length = byteArray.length;
+        byte[] reversedArray = new byte[length];
+        for (int i = 0; i < length; i++) {
+            reversedArray[i] = byteArray[length - 1 - i];
+        }
+        return reversedArray;
+    }
+    
 	private byte[] shortToBytes( short num )
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
-        buffer.putShort(num);
+        buffer.putShort( reverseShort(num) );
         return buffer.array();
 	}
 	
@@ -156,10 +174,10 @@ public class FileIO {
 		
         try (DataInputStream instream = new DataInputStream(new FileInputStream(mFullpath))) {
 
-            short width = instream.readShort();
-            short height = instream.readShort();
-            mFrameMS = (int)instream.readShort();
-            short num_frames = instream.readShort();
+            short width = reverseShort( instream.readShort() );
+            short height = reverseShort( instream.readShort() );
+            mFrameMS =  reverseShort( instream.readShort() );
+            short num_frames = reverseShort( instream.readShort() );
             
             int x_bytes = (int)Math.ceil( (float)width / 8.0 );
             
@@ -168,6 +186,7 @@ public class FileIO {
             for (int i=0;i<num_frames;++i)
             {
                 byte[] data = instream.readNBytes( bytes_in_frame );
+                data = reverseBytes(data);
                 if( data.length != bytes_in_frame )
                 {
                 	instream.close();
@@ -204,7 +223,7 @@ public class FileIO {
             for( Frame frame:frames )
             {
             	data = frame.pack();
-            	outstream.write(data);
+            	outstream.write(reverseBytes(data));
             }
             outstream.close();
         } catch (IOException e) {
